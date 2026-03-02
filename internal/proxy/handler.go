@@ -20,18 +20,15 @@ func logDebug(debug bool, format string, v ...any) {
 	}
 }
 
-// ProxyHandler holds the configuration map and the shared HTTP client.
 type ProxyHandler struct {
-	// Map of addon "type" (e.g., "comet") to a list of target base URLs.
 	Routes     map[string][]string
 	HTTPClient *http.Client
 	Debug      bool
 }
 
-// NewProxyHandler creates a new handler with an optimized HTTP client.
 func NewProxyHandler(routes map[string][]string, debug bool) *ProxyHandler {
 	client := &http.Client{
-		Timeout: 30 * time.Second, // Max time we will wait for ANY addon to respond
+		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
 			MaxIdleConns:        100,
 			MaxIdleConnsPerHost: 10,
@@ -46,7 +43,6 @@ func NewProxyHandler(routes map[string][]string, debug bool) *ProxyHandler {
 	}
 }
 
-// ServeHTTP satisfies the http.Handler interface.
 func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	logInfo("INCOMING: %s %s (from %s)", r.Method, r.URL.Path, r.RemoteAddr)
@@ -55,8 +51,6 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		go func(ctx context.Context, path string) {
 			<-ctx.Done()
 			err := ctx.Err()
-			// We wait 10ms to see if ServeHTTP naturally finished,
-			// or if this was a premature cancellation.
 			time.Sleep(10 * time.Millisecond)
 			logDebug(h.Debug, "Context cancelled for %s. Reason: %v (Time elapsed: %v)", path, err, time.Since(start))
 		}(r.Context(), r.URL.Path)
